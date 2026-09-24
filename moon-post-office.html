@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>月亮邮局</title>
+<style>
+:root{--ink:#493c4b;--muted:#8c7f91;--paper:#fffaf2;--lav:#eee7f6;--gold:#d8aa61;--deep:#765b7d}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:linear-gradient(#f4eff9,#fff8ef);min-height:100vh}
+.wrap{max-width:620px;margin:auto;padding:28px 18px 50px}.hero{text-align:center}.moon{width:82px;height:82px;margin:auto;border-radius:50%;background:#f6dda4;box-shadow:0 0 45px #e9c98388}
+h1{font-size:28px;margin:14px 0 5px}.sub{color:var(--muted);margin:0 0 22px}.card{background:#ffffffcc;border:1px solid #e7dfea;border-radius:24px;padding:20px;box-shadow:0 14px 40px #705b7b12}
+label{display:block;font-size:14px;font-weight:650;margin:14px 0 7px}input,textarea{width:100%;font:inherit;font-size:16px;border:1px solid #ded3e2;border-radius:13px;padding:12px 13px;background:#fffdfb;color:var(--ink);outline:none}input:focus,textarea:focus{border-color:#a88db1}textarea{min-height:135px;resize:vertical}
+button{font:inherit;border:0;border-radius:14px;padding:13px 17px;cursor:pointer}.primary{width:100%;margin-top:18px;background:var(--deep);color:white;font-weight:700}.secondary{background:#eee6f1;color:var(--ink);font-weight:650}.hidden{display:none!important}.notice{font-size:13px;color:var(--muted);line-height:1.65}.error{color:#a54848;margin-top:10px}
+.giftbox{text-align:center;padding:10px 0}.cake{width:190px;height:190px;margin:26px auto;border-radius:50%;background:#ead5a5;border:10px double #c8aa70;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;color:#806337;position:relative;transition:.45s}.cake:before,.cake:after{position:absolute;left:0;right:0;font-size:15px;letter-spacing:5px;opacity:.65}.cake:before{content:"✦ ❀ ✦ ❀ ✦";top:27px}.cake:after{content:"❀ ✦ ❀ ✦ ❀";bottom:27px}.cake.fill{background:#dfb86f;transform:scale(.94)}.cake.press{border-radius:35%;background:#dbad63}.cake.bake{border-radius:35%;background:#c98b43;border-color:#98602e;color:#603717}.progress{height:8px;background:#eee7ef;border-radius:99px;overflow:hidden;margin:20px 0 7px}.bar{height:100%;width:16%;background:#8c7095;transition:.35s}.letter{background:var(--paper);border:1px solid #e8dcc8;border-radius:18px;padding:23px;text-align:left;white-space:pre-wrap;line-height:1.9;margin-top:18px}.linkbox{word-break:break-all;background:#f7f2f8;border:1px dashed #cdbed1;border-radius:14px;padding:13px;margin:15px 0;font-size:13px}.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.tiny{font-size:12px;color:var(--muted);margin-top:14px}
+</style>
+</head>
+<body><main class="wrap">
+<section class="hero"><div class="moon"></div><h1>月亮邮局</h1><p class="sub" id="tagline">把一枚月饼，寄给想念的人。</p></section>
+
+<section class="card" id="maker">
+<h2>寄一枚月饼</h2>
+<p class="notice">秘密只会被编码进礼物链接，不会上传到服务器。生成后，把链接发给收件人就好。</p>
+<label>收件人称呼</label><input id="to" maxlength="30" placeholder="例如：哥哥">
+<label>月饼馅料</label><input id="flavor" maxlength="40" placeholder="偷偷选一个味道">
+<label>为什么选这个味道</label><input id="reason" maxlength="120" placeholder="收件人做到那一步才会发现">
+<label>模具上刻什么</label><input id="stamp" maxlength="8" placeholder="最多 8 个字">
+<label>藏进月饼里的信</label><textarea id="message" maxlength="1500" placeholder="只有吃到最后，信才会出现。"></textarea>
+<label>署名</label><input id="from" maxlength="30" placeholder="例如：巫乐">
+<div id="err" class="error"></div>
+<button class="primary" id="seal">封好月饼，生成礼物链接</button>
+</section>
+
+<section class="card hidden" id="share">
+<h2>月饼封好啦</h2>
+<p class="notice">从现在开始，页面不会再展示你写的信。复制下面的完整链接，只把它发给收件人。</p>
+<div class="linkbox" id="giftlink"></div>
+<div class="actions"><button class="secondary" id="copy">复制礼物链接</button><button class="secondary" id="preview">在本页打开礼物</button></div>
+<p class="tiny" id="copymsg"></p>
+</section>
+
+<section class="card hidden" id="receiver">
+<div class="giftbox">
+<p class="notice" id="incoming"></p><h2 id="stepTitle">收到一只还没做完的月饼</h2>
+<div class="cake" id="cake">软软的面团</div>
+<p id="hint" class="notice">先揉得圆圆的。</p>
+<button class="primary" id="next">揉面团</button>
+<div class="progress"><div class="bar" id="bar"></div></div><div class="tiny" id="count">1 / 6</div>
+</div>
+</section>
+
+<section class="card hidden" id="ending">
+<h2 id="endTitle">月饼里掉出一封信</h2>
+<div class="letter"><div class="tiny" id="letterTo"></div><div id="letterBody"></div><div style="text-align:right;margin-top:20px" id="letterFrom"></div></div>
+</section>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+function enc(obj){const bytes=new TextEncoder().encode(JSON.stringify(obj));let bin='';bytes.forEach(b=>bin+=String.fromCharCode(b));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function dec(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const bin=atob(s),bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));return JSON.parse(new TextDecoder().decode(bytes))}
+function show(id){['maker','share','receiver','ending'].forEach(x=>$('#'+x).classList.add('hidden'));$('#'+id).classList.remove('hidden')}
+let gift=null,step=0;
+function loadGift(g){
+ gift=g;step=0;show('receiver');$('#tagline').textContent='有人从月亮那边给你寄来了一点东西。';$('#incoming').textContent=(g.from||'有人')+' 给 '+(g.to||'你')+' 寄来了一枚月饼。';
+ render();
+}
+function render(){
+ const states=[
+  ['揉面团','先把它揉得圆圆的。','软软的面团',''],
+  ['包馅','现在可以看看里面是什么味道了。',gift.flavor,'fill'],
+  ['合起来',gift.reason||'秘密已经被好好包进去了。','♡','fill'],
+  ['压模','压一下，看看寄件人留下了什么字。',gift.stamp,'press'],
+  ['烘烤','送进烤箱，等香气慢慢跑出来。',gift.stamp,'bake'],
+  ['咬一口','最后一步。吃掉它。',gift.stamp,'bake']
+ ]; const s=states[step];$('#next').textContent=s[0];$('#hint').textContent=s[1];$('#cake').textContent=s[2];$('#cake').className='cake '+s[3];$('#bar').style.width=((step+1)/6*100)+'%';$('#count').textContent=(step+1)+' / 6';
+}
+$('#next').addEventListener('click',()=>{if(step<5){step++;render();return}show('ending');$('#tagline').textContent='月亮邮局 · 已签收';$('#endTitle').textContent='月饼里掉出一封信';$('#letterTo').textContent='TO：'+(gift.to||'你');$('#letterBody').textContent=gift.message;$('#letterFrom').textContent='—— '+(gift.from||'匿名寄件人')});
+$('#seal').addEventListener('click',()=>{
+ const g={to:$('#to').value.trim(),flavor:$('#flavor').value.trim(),reason:$('#reason').value.trim(),stamp:$('#stamp').value.trim(),message:$('#message').value.trim(),from:$('#from').value.trim()};
+ if(!g.to||!g.flavor||!g.stamp||!g.message||!g.from){$('#err').textContent='收件人、馅料、模具文字、信和署名都要填哦。';return}
+ $('#err').textContent='';const base=location.href.split('#')[0];const link=base+'#gift='+enc(g);$('#giftlink').textContent=link;show('share');
+});
+$('#copy').addEventListener('click',async()=>{const t=$('#giftlink').textContent;try{await navigator.clipboard.writeText(t);$('#copymsg').textContent='复制好啦。现在只把链接发给收件人。'}catch(e){$('#copymsg').textContent='浏览器没允许自动复制，请长按上面的链接手动复制。'}});
+$('#preview').addEventListener('click',()=>{location.hash=$('#giftlink').textContent.split('#')[1];gift=dec(location.hash.slice(6));loadGift(gift)});
+try{if(location.hash.startsWith('#gift=')){gift=dec(location.hash.slice(6));loadGift(gift)}}catch(e){$('#err').textContent='这个礼物链接好像损坏了。'}
+</script></body></html>
